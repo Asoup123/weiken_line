@@ -92,12 +92,12 @@ Windows PowerShell 複製環境檔：`Copy-Item .env.example .env`
 ```
 VITE_APPWRITE_ENDPOINT=https://<你的區域>.cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=<project id>
-VITE_APPWRITE_DATABASE_ID=shop
+VITE_APPWRITE_DATABASE_ID=line_order
 VITE_APPWRITE_CATEGORIES_ID=categories
 VITE_APPWRITE_PRODUCTS_ID=products
 VITE_APPWRITE_ORDERS_ID=orders
-VITE_APPWRITE_CREATE_ORDER_FUNCTION_ID=<function id>
-VITE_APPWRITE_ADMIN_FUNCTION_ID=<function id>
+VITE_APPWRITE_CREATE_ORDER_FUNCTION_ID=6afeb48000348402a79a
+VITE_APPWRITE_ADMIN_FUNCTION_ID=6afeb4e3002551ebd6b2
 ```
 
 本機打開 `http://localhost:5173`；後台 `http://localhost:5173/#admin`。
