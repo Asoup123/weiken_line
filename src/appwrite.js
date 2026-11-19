@@ -1,0 +1,7 @@
+import {Client,Account,Databases,Functions,Query} from 'appwrite';
+export const cfg={endpoint:import.meta.env.VITE_APPWRITE_ENDPOINT,project:import.meta.env.VITE_APPWRITE_PROJECT_ID,db:import.meta.env.VITE_APPWRITE_DATABASE_ID||'shop',categories:(import.meta.env.VITE_APPWRITE_CATEGORIES_COLLECTION_ID||import.meta.env.VITE_APPWRITE_CATEGORIES_ID)||'categories',products:(import.meta.env.VITE_APPWRITE_PRODUCTS_COLLECTION_ID||import.meta.env.VITE_APPWRITE_PRODUCTS_ID)||'products',orders:(import.meta.env.VITE_APPWRITE_ORDERS_COLLECTION_ID||import.meta.env.VITE_APPWRITE_ORDERS_ID)||'orders',createOrder:import.meta.env.VITE_APPWRITE_CREATE_ORDER_FUNCTION_ID,admin:(import.meta.env.VITE_APPWRITE_ADMIN_API_FUNCTION_ID||import.meta.env.VITE_APPWRITE_ADMIN_FUNCTION_ID)};
+export const client=new Client();if(cfg.endpoint&&cfg.project)client.setEndpoint(cfg.endpoint).setProject(cfg.project);
+export const account=new Account(client),db=new Databases(client),functions=new Functions(client);
+export const listCategories=()=>db.listDocuments(cfg.db,cfg.categories,[Query.limit(100)]);
+export const listProducts=()=>db.listDocuments(cfg.db,cfg.products,[Query.limit(100),Query.equal('is_active',true)]);
+export async function executeFunction(id,body){const result=await functions.createExecution(id,JSON.stringify(body),false);let data;try{data=JSON.parse(result.responseBody||'{}')}catch{throw Error('伺服器回應格式錯誤')}if(result.status!=='completed'||!data.ok)throw Error(data.error||'操作失敗');return data}
