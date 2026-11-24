@@ -13,6 +13,15 @@ export default async({req,res,error})=>{
    const[c,p,o]=await Promise.all([db.listDocuments(database,cats,[Query.limit(100)]),db.listDocuments(database,products,[Query.limit(100)]),db.listDocuments(database,orders,[Query.orderDesc('$createdAt'),Query.limit(100)])]);
    return res.json({ok:true,categories:c.documents,products:p.documents,orders:o.documents});
   }
+  if(b.action==='orderItems'){
+   if(typeof b.id!=='string'||!b.id)throw Error('訂單編號不正確');
+   await db.getDocument(database,orders,b.id);
+   const table=process.env.APPWRITE_ORDER_ITEMS_COLLECTION_ID||'order_items';
+   const items=[];let cursor;
+   do{const page=await db.listDocuments(database,table,[Query.equal('order_id',b.id),Query.limit(100),...(cursor?[Query.cursorAfter(cursor)]:[])]);items.push(...page.documents);cursor=page.documents.length===100?page.documents.at(-1).$id:null;}while(cursor);
+   const details=await Promise.all(items.map(async i=>{let imageUrl='';try{imageUrl=(await db.getDocument(database,products,i.product_id)).image_url||''}catch(e){if(e.code!==404)throw e}return {$id:i.$id,name:i.product_name,quantity:i.quantity,imageUrl}}));
+   return res.json({ok:true,items:details});
+  }
   if(b.action==='status'){
    const old=await db.getDocument(database,orders,b.id);
    const allowed={pending:['confirmed','cancelled'],confirmed:['shipped','cancelled'],preparing:['shipped','cancelled']};
@@ -38,10 +47,10 @@ export default async({req,res,error})=>{
    await db.deleteDocument(database,products,b.id);return res.json({ok:true});
   }else if(b.action==='saveProduct'){
    const p=b.product||{};
-   if(typeof p.name!=='string'||!p.name.trim()||p.name.length>150||!Number.isSafeInteger(p.price)||p.price<0||p.price>10000000||typeof p.categoryId!=='string'||!p.categoryId||String(p.description||'').length>2000||String(p.imageUrl||'').length>2000)throw Error('商品資料格式不正確');
+   if(typeof p.name!=='string'||!p.name.trim()||p.name.length>150||typeof p.categoryId!=='string'||!p.categoryId||String(p.description||'').length>2000||String(p.imageUrl||'').length>2000)throw Error('商品資料格式不正確');
    await db.getDocument(database,cats,p.categoryId);
-   const fields={name:p.name.trim(),price:p.price,category_id:p.categoryId,description:p.description||'',image_url:p.imageUrl||'',is_active:!!p.active,sort_order:Number.isInteger(p.sort)?p.sort:0};
-   result=p.$id?await db.updateDocument(database,products,p.$id,fields):await db.createDocument(database,products,ID.unique(),fields);
+   const fields={name:p.name.trim(),category_id:p.categoryId,description:p.description||'',image_url:p.imageUrl||'',is_active:!!p.active,sort_order:Number.isInteger(p.sort)?p.sort:0};
+   result=p.$id?await db.updateDocument(database,products,p.$id,fields):await db.createDocument(database,products,ID.unique(),{...fields,price:0});
   }else return res.json({ok:false,error:'Unknown action'},400);
   return res.json({ok:true,id:result.$id});
  }catch(e){error(e.message);return res.json({ok:false,error:'操作失敗，請確認權限與資料格式'},400)}
